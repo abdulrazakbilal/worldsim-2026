@@ -99,7 +99,8 @@ page = st.sidebar.radio("Navigate", [
     "🏠 Overview",
     "⚔️ Match Predictor",
     "🗂️ Group Explorer",
-    "📈 Path Probabilities"
+    "📈 Path Probabilities",
+    "🔄 Update Results"
 ])
 st.sidebar.markdown("---")
 st.sidebar.markdown("**Model Info**")
@@ -330,3 +331,129 @@ elif page == "📈 Path Probabilities":
     ax5.grid(alpha=0.2, color='white')
     plt.tight_layout()
     st.pyplot(fig5)
+
+# ══════════════════════════════════════════════════════════════
+# PAGE: UPDATE RESULTS
+# ══════════════════════════════════════════════════════════════
+elif page == "🔄 Update Results":
+    st.subheader("🔄 Live Match Result Entry")
+    st.markdown("Enter real match results as the tournament progresses. "
+                "The model will show how probabilities would shift.")
+    st.info("🗓️ Tournament starts June 11, 2026 — Group Stage Day 1")
+
+    st.markdown("#### Enter a match result")
+    col1, col2, col3 = st.columns([2, 1, 2])
+    with col1:
+        team_a = st.selectbox("Home Team", all_wc_teams,
+                               index=all_wc_teams.index('Mexico'))
+    with col2:
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown("### vs")
+    with col3:
+        team_b = st.selectbox("Away Team", all_wc_teams,
+                               index=all_wc_teams.index('South Africa'))
+
+    col4, col5 = st.columns(2)
+    with col4:
+        score_a = st.number_input(f"{team_a} goals",
+                                   min_value=0, max_value=20, value=0)
+    with col5:
+        score_b = st.number_input(f"{team_b} goals",
+                                   min_value=0, max_value=20, value=0)
+
+    st.selectbox("Tournament stage", [
+        "Group Stage", "Round of 32", "Round of 16",
+        "Quarter Final", "Semi Final", "Final"
+    ])
+
+    if st.button("⚡ Analyse Result", type="primary"):
+        st.markdown(f"### Result: {team_a} {int(score_a)} — {int(score_b)} {team_b}")
+
+        if team_a in team_features.index and team_b in team_features.index:
+            elo_a = team_features.loc[team_a, 'elo']
+            elo_b = team_features.loc[team_b, 'elo']
+
+            exp_a = 1 / (1 + 10 ** ((elo_b - elo_a) / 400))
+
+            if score_a > score_b:
+                actual_a, actual_b = 1.0, 0.0
+                result_str = f"✅ {team_a} WIN"
+            elif score_b > score_a:
+                actual_a, actual_b = 0.0, 1.0
+                result_str = f"✅ {team_b} WIN"
+            else:
+                actual_a, actual_b = 0.5, 0.5
+                result_str = "🤝 DRAW"
+
+            k = 32
+            new_elo_a = elo_a + k * (actual_a - exp_a)
+            new_elo_b = elo_b + k * (actual_b - (1 - exp_a))
+            delta_a = new_elo_a - elo_a
+            delta_b = new_elo_b - elo_b
+
+            st.markdown(f"**{result_str}**")
+            st.markdown("---")
+            st.markdown("#### ⚡ Elo Rating Changes")
+
+            c1, c2 = st.columns(2)
+            with c1:
+                st.metric(team_a, f"{new_elo_a:.0f}", f"{delta_a:+.1f}")
+                st.markdown(f"*Was {elo_a:.0f} → Now {new_elo_a:.0f}*")
+            with c2:
+                st.metric(team_b, f"{new_elo_b:.0f}", f"{delta_b:+.1f}")
+                st.markdown(f"*Was {elo_b:.0f} → Now {new_elo_b:.0f}*")
+
+            # Upset analysis
+            pre_match = match_cache_knockout.get((team_a, team_b))
+            if pre_match:
+                model_fav = team_a if pre_match['home_win'] > pre_match['away_win'] \
+                            else team_b
+                if score_a > score_b:
+                    actual_winner = team_a
+                elif score_b > score_a:
+                    actual_winner = team_b
+                else:
+                    actual_winner = "Draw"
+
+                st.markdown("---")
+                st.markdown("#### 🚨 Upset Analysis")
+
+                if actual_winner != "Draw" and actual_winner != model_fav:
+                    upset_prob = pre_match['away_win'] if actual_winner == team_b \
+                                 else pre_match['home_win']
+                    st.error(f"⚠️ UPSET DETECTED! Model gave {actual_winner} only "
+                            f"{upset_prob*100:.1f}% chance of winning.")
+                elif actual_winner == "Draw":
+                    st.info(f"Draw — model gave {pre_match['draw']*100:.1f}% "
+                           f"probability to this outcome.")
+                else:
+                    fav_prob = pre_match['home_win'] if model_fav == team_a \
+                               else pre_match['away_win']
+                    st.success(f"✅ Favourite won as expected "
+                              f"({fav_prob*100:.1f}% pre-match probability).")
+
+            st.markdown("---")
+            st.info("💡 After the group stage ends, re-run the Monte Carlo simulation "
+                   "with updated Elo ratings to refresh all championship probabilities.")
+        else:
+            st.warning("Team data not available for Elo calculation.")
+
+    st.markdown("---")
+    st.markdown("#### 📋 Opening Day Fixtures — June 11-12")
+    day1 = [
+        ("Mexico",         "South Africa", "Group A", "Jun 11"),
+        ("United States",  "Paraguay",     "Group D", "Jun 12"),
+        ("Canada",         "Bosnia and Herzegovina", "Group B", "Jun 12"),
+        ("Germany",        "Curacao",      "Group E", "Jun 12"),
+    ]
+    for ta, tb, grp, date in day1:
+        pred = match_cache_knockout.get((ta, tb))
+        if pred:
+            c1, c2, c3, c4 = st.columns([2, 1, 2, 3])
+            with c1: st.markdown(f"**{ta}**")
+            with c2: st.markdown("vs")
+            with c3: st.markdown(f"**{tb}**")
+            with c4:
+                st.markdown(f"{grp} | {date} | "
+                           f"{ta}: {pred['home_win']*100:.0f}% — "
+                           f"{tb}: {pred['away_win']*100:.0f}%")
