@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import json
 import sys
 import os
+from datetime import date, timedelta, datetime
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
@@ -42,6 +43,82 @@ WC2026_GROUPS = {
 }
 all_wc_teams = sorted([t for grp in WC2026_GROUPS.values() for t in grp])
 
+# ── Full WC 2026 Fixture Schedule ────────────────────────────
+WC_FIXTURES = [
+    ("Mexico",        "South Africa",           "A", "2026-06-11"),
+    ("Canada",        "Bosnia and Herzegovina", "B", "2026-06-12"),
+    ("Germany",       "Curacao",                "E", "2026-06-12"),
+    ("United States", "Paraguay",               "D", "2026-06-12"),
+    ("Argentina",     "Algeria",                "J", "2026-06-13"),
+    ("Spain",         "Cape Verde",             "H", "2026-06-13"),
+    ("Brazil",        "Morocco",                "C", "2026-06-13"),
+    ("France",        "Senegal",                "I", "2026-06-14"),
+    ("England",       "Croatia",                "L", "2026-06-14"),
+    ("Portugal",      "DR Congo",               "K", "2026-06-14"),
+    ("Netherlands",   "Japan",                  "F", "2026-06-14"),
+    ("Belgium",       "Egypt",                  "G", "2026-06-15"),
+    ("South Korea",   "Czechia",                "A", "2026-06-15"),
+    ("Switzerland",   "Qatar",                  "B", "2026-06-15"),
+    ("Ecuador",       "Ivory Coast",            "E", "2026-06-15"),
+    ("Australia",     "Turkey",                 "D", "2026-06-16"),
+    ("Austria",       "Jordan",                 "J", "2026-06-16"),
+    ("Uruguay",       "Saudi Arabia",           "H", "2026-06-16"),
+    ("Haiti",         "Scotland",               "C", "2026-06-16"),
+    ("Norway",        "Iraq",                   "I", "2026-06-17"),
+    ("Ghana",         "Panama",                 "L", "2026-06-17"),
+    ("Uzbekistan",    "Colombia",               "K", "2026-06-17"),
+    ("Sweden",        "Tunisia",                "F", "2026-06-17"),
+    ("Iran",          "New Zealand",            "G", "2026-06-18"),
+    ("South Africa",  "South Korea",            "A", "2026-06-18"),
+    ("Bosnia and Herzegovina", "Switzerland",   "B", "2026-06-18"),
+    ("Curacao",       "Ecuador",                "E", "2026-06-19"),
+    ("Paraguay",      "Australia",              "D", "2026-06-19"),
+    ("Morocco",       "Haiti",                  "C", "2026-06-19"),
+    ("Algeria",       "Austria",                "J", "2026-06-19"),
+    ("Cape Verde",    "Uruguay",                "H", "2026-06-20"),
+    ("Senegal",       "Norway",                 "I", "2026-06-20"),
+    ("Croatia",       "Ghana",                  "L", "2026-06-20"),
+    ("DR Congo",      "Uzbekistan",             "K", "2026-06-20"),
+    ("Japan",         "Sweden",                 "F", "2026-06-21"),
+    ("Egypt",         "Iran",                   "G", "2026-06-21"),
+    ("Mexico",        "Czechia",                "A", "2026-06-21"),
+    ("Canada",        "Qatar",                  "B", "2026-06-21"),
+    ("Germany",       "Australia",              "E", "2026-06-22"),
+    ("United States", "Turkey",                 "D", "2026-06-22"),
+    ("Brazil",        "Scotland",               "C", "2026-06-22"),
+    ("France",        "Iraq",                   "I", "2026-06-22"),
+    ("Argentina",     "Jordan",                 "J", "2026-06-23"),
+    ("England",       "Panama",                 "L", "2026-06-23"),
+    ("Spain",         "Saudi Arabia",           "H", "2026-06-23"),
+    ("Portugal",      "Colombia",               "K", "2026-06-23"),
+    ("Netherlands",   "Tunisia",                "F", "2026-06-24"),
+    ("Belgium",       "New Zealand",            "G", "2026-06-24"),
+    ("South Korea",   "South Africa",           "A", "2026-06-24"),
+    ("Switzerland",   "Bosnia and Herzegovina", "B", "2026-06-24"),
+    ("Ivory Coast",   "Germany",                "E", "2026-06-25"),
+    ("Turkey",        "Paraguay",               "D", "2026-06-25"),
+    ("Scotland",      "Morocco",                "C", "2026-06-25"),
+    ("Iraq",          "Senegal",                "I", "2026-06-25"),
+    ("Jordan",        "Algeria",                "J", "2026-06-25"),
+    ("Panama",        "Croatia",                "L", "2026-06-25"),
+    ("Saudi Arabia",  "Cape Verde",             "H", "2026-06-26"),
+    ("Colombia",      "DR Congo",               "K", "2026-06-26"),
+    ("Tunisia",       "Japan",                  "F", "2026-06-26"),
+    ("New Zealand",   "Egypt",                  "G", "2026-06-26"),
+    ("Czechia",       "Mexico",                 "A", "2026-06-27"),
+    ("Qatar",         "Canada",                 "B", "2026-06-27"),
+    ("Ecuador",       "Germany",                "E", "2026-06-27"),
+    ("Australia",     "United States",          "D", "2026-06-27"),
+    ("Haiti",         "Brazil",                 "C", "2026-06-27"),
+    ("Norway",        "France",                 "I", "2026-06-27"),
+    ("Austria",       "Argentina",              "J", "2026-06-27"),
+    ("Ghana",         "England",                "L", "2026-06-27"),
+    ("Uruguay",       "Spain",                  "H", "2026-06-27"),
+    ("Uzbekistan",    "Portugal",               "K", "2026-06-27"),
+    ("Sweden",        "Netherlands",            "F", "2026-06-27"),
+    ("Iran",          "Belgium",                "G", "2026-06-27"),
+]
+
 # ── Load data ────────────────────────────────────────────────
 @st.cache_data
 def load_data():
@@ -64,16 +141,16 @@ def build_match_cache(_team_features):
     def elo_win_prob(home, away):
         if home not in tf.index or away not in tf.index:
             return 0.4, 0.2, 0.4
-        elo_h  = tf.loc[home, 'elo']
-        elo_a  = tf.loc[away, 'elo']
-        form_h = tf.loc[home, 'form']
-        form_a = tf.loc[away, 'form']
-        exp_h  = 1 / (1 + 10 ** ((elo_a - elo_h) / 400))
+        elo_h    = tf.loc[home, 'elo']
+        elo_a    = tf.loc[away, 'elo']
+        form_h   = tf.loc[home, 'form']
+        form_a   = tf.loc[away, 'form']
+        exp_h    = 1 / (1 + 10 ** ((elo_a - elo_h) / 400))
         form_adj = ((form_h + 0.5) / (form_a + 0.5)) ** 0.15
-        exp_h  = float(np.clip(exp_h * form_adj, 0.05, 0.95))
-        draw   = float(np.clip(0.28 * (1 - abs(exp_h - 0.5) * 1.2), 0.18, 0.30))
-        win_h  = exp_h * (1 - draw)
-        win_a  = (1 - exp_h) * (1 - draw)
+        exp_h    = float(np.clip(exp_h * form_adj, 0.05, 0.95))
+        draw     = float(np.clip(0.28 * (1 - abs(exp_h - 0.5) * 1.2), 0.18, 0.30))
+        win_h    = exp_h * (1 - draw)
+        win_a    = (1 - exp_h) * (1 - draw)
         return win_h, draw, win_a
 
     cache_knockout = {}
@@ -100,7 +177,9 @@ page = st.sidebar.radio("Navigate", [
     "⚔️ Match Predictor",
     "🗂️ Group Explorer",
     "📈 Path Probabilities",
-    "🔄 Update Results"
+    "🔄 Update Results",
+    "📅 Today's Matches",
+    "📖 Methodology",
 ])
 st.sidebar.markdown("---")
 st.sidebar.markdown("**Model Info**")
@@ -372,7 +451,6 @@ elif page == "🔄 Update Results":
         if team_a in team_features.index and team_b in team_features.index:
             elo_a = team_features.loc[team_a, 'elo']
             elo_b = team_features.loc[team_b, 'elo']
-
             exp_a = 1 / (1 + 10 ** ((elo_b - elo_a) / 400))
 
             if score_a > score_b:
@@ -394,7 +472,6 @@ elif page == "🔄 Update Results":
             st.markdown(f"**{result_str}**")
             st.markdown("---")
             st.markdown("#### ⚡ Elo Rating Changes")
-
             c1, c2 = st.columns(2)
             with c1:
                 st.metric(team_a, f"{new_elo_a:.0f}", f"{delta_a:+.1f}")
@@ -403,7 +480,6 @@ elif page == "🔄 Update Results":
                 st.metric(team_b, f"{new_elo_b:.0f}", f"{delta_b:+.1f}")
                 st.markdown(f"*Was {elo_b:.0f} → Now {new_elo_b:.0f}*")
 
-            # Upset analysis
             pre_match = match_cache_knockout.get((team_a, team_b))
             if pre_match:
                 model_fav = team_a if pre_match['home_win'] > pre_match['away_win'] \
@@ -417,7 +493,6 @@ elif page == "🔄 Update Results":
 
                 st.markdown("---")
                 st.markdown("#### 🚨 Upset Analysis")
-
                 if actual_winner != "Draw" and actual_winner != model_fav:
                     upset_prob = pre_match['away_win'] if actual_winner == team_b \
                                  else pre_match['home_win']
@@ -441,12 +516,12 @@ elif page == "🔄 Update Results":
     st.markdown("---")
     st.markdown("#### 📋 Opening Day Fixtures — June 11-12")
     day1 = [
-        ("Mexico",         "South Africa", "Group A", "Jun 11"),
-        ("United States",  "Paraguay",     "Group D", "Jun 12"),
-        ("Canada",         "Bosnia and Herzegovina", "Group B", "Jun 12"),
-        ("Germany",        "Curacao",      "Group E", "Jun 12"),
+        ("Mexico",        "South Africa",           "Group A", "Jun 11"),
+        ("United States", "Paraguay",               "Group D", "Jun 12"),
+        ("Canada",        "Bosnia and Herzegovina", "Group B", "Jun 12"),
+        ("Germany",       "Curacao",                "Group E", "Jun 12"),
     ]
-    for ta, tb, grp, date in day1:
+    for ta, tb, grp, dt in day1:
         pred = match_cache_knockout.get((ta, tb))
         if pred:
             c1, c2, c3, c4 = st.columns([2, 1, 2, 3])
@@ -454,6 +529,190 @@ elif page == "🔄 Update Results":
             with c2: st.markdown("vs")
             with c3: st.markdown(f"**{tb}**")
             with c4:
-                st.markdown(f"{grp} | {date} | "
+                st.markdown(f"{grp} | {dt} | "
                            f"{ta}: {pred['home_win']*100:.0f}% — "
                            f"{tb}: {pred['away_win']*100:.0f}%")
+
+# ══════════════════════════════════════════════════════════════
+# PAGE: TODAY'S MATCHES
+# ══════════════════════════════════════════════════════════════
+elif page == "📅 Today's Matches":
+    st.subheader("📅 Today's World Cup Fixtures")
+
+    today        = date.today()
+    today_str    = today.strftime("%Y-%m-%d")
+    tomorrow_str = (today + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    todays    = [(ta,tb,grp,d) for ta,tb,grp,d in WC_FIXTURES if d == today_str]
+    tomorrows = [(ta,tb,grp,d) for ta,tb,grp,d in WC_FIXTURES if d == tomorrow_str]
+
+    if todays:
+        st.markdown(f"### 🔴 Today — {today.strftime('%B %d, %Y')}")
+        for ta, tb, grp, d in todays:
+            pred = match_cache_knockout.get((ta, tb))
+            if pred:
+                hw = pred['home_win']*100
+                dr = pred['draw']*100
+                aw = pred['away_win']*100
+                st.markdown(f"**Group {grp}**")
+                c1,c2,c3,c4,c5 = st.columns([3,1,3,1,3])
+                with c1: st.metric(ta, f"{hw:.0f}%", "Win")
+                with c2: st.markdown("<br><br>**vs**", unsafe_allow_html=True)
+                with c3: st.metric(tb, f"{aw:.0f}%", "Win")
+                with c4: st.markdown("<br><br>**—**", unsafe_allow_html=True)
+                with c5: st.metric("Draw", f"{dr:.0f}%")
+                fig_t, ax_t = plt.subplots(figsize=(8, 0.6))
+                fig_t.patch.set_facecolor('#0e1117')
+                ax_t.set_facecolor('#0e1117')
+                ax_t.barh([0],[hw], color='#00d4a4')
+                ax_t.barh([0],[dr], left=[hw], color='#888888')
+                ax_t.barh([0],[aw], left=[hw+dr], color='#FF6B6B')
+                ax_t.set_xlim(0,100)
+                ax_t.set_yticks([])
+                ax_t.spines[:].set_visible(False)
+                plt.tight_layout(pad=0)
+                st.pyplot(fig_t)
+                st.markdown("---")
+    else:
+        next_fixtures = [(ta,tb,grp,d) for ta,tb,grp,d in WC_FIXTURES
+                         if d >= today_str]
+        if next_fixtures:
+            next_date = next_fixtures[0][3]
+            next_day  = [(ta,tb,grp,d) for ta,tb,grp,d in WC_FIXTURES
+                         if d == next_date]
+            nd = datetime.strptime(next_date, "%Y-%m-%d").strftime("%B %d, %Y")
+            st.info(f"🗓️ No matches today. Next fixtures: **{nd}**")
+            st.markdown(f"### Upcoming — {nd}")
+            for ta, tb, grp, d in next_day:
+                pred = match_cache_knockout.get((ta, tb))
+                if pred:
+                    c1,c2,c3,c4 = st.columns([3,1,3,2])
+                    with c1: st.markdown(f"**{ta}**  `{pred['home_win']*100:.0f}%`")
+                    with c2: st.markdown("**vs**")
+                    with c3: st.markdown(f"**{tb}**  `{pred['away_win']*100:.0f}%`")
+                    with c4: st.markdown(f"Group {grp} | Draw: {pred['draw']*100:.0f}%")
+        else:
+            st.success("🏆 Tournament complete!")
+
+    if tomorrows:
+        st.markdown("---")
+        st.markdown("### 📆 Tomorrow")
+        for ta, tb, grp, d in tomorrows:
+            pred = match_cache_knockout.get((ta, tb))
+            if pred:
+                c1,c2,c3,c4 = st.columns([3,1,3,2])
+                with c1: st.markdown(f"**{ta}**  `{pred['home_win']*100:.0f}%`")
+                with c2: st.markdown("**vs**")
+                with c3: st.markdown(f"**{tb}**  `{pred['away_win']*100:.0f}%`")
+                with c4: st.markdown(f"Group {grp} | Draw: {pred['draw']*100:.0f}%")
+
+# ══════════════════════════════════════════════════════════════
+# PAGE: METHODOLOGY
+# ══════════════════════════════════════════════════════════════
+elif page == "📖 Methodology":
+    st.subheader("📖 How WorldSim Works")
+    st.markdown("---")
+
+    st.markdown("### 🗄️ Data")
+    st.markdown("""
+WorldSim is trained on **49,287 international football matches** from 1990 to 2026,
+sourced from Kaggle's international football results dataset. We filter to competitive
+matches only — World Cup, European Championship, Copa América, and qualifiers —
+giving us **10,782 high-signal matches** for model fitting.
+    """)
+
+    st.markdown("---")
+    st.markdown("### ⚡ Elo Rating Engine")
+    st.markdown("""
+Every team starts with an Elo rating of **1500**. After each match, ratings update using:
+
+```
+new_rating = old_rating + K × (actual − expected)
+```
+
+Where:
+- **K = 32** (update speed)
+- **expected** = 1 / (1 + 10^((opponent_elo − team_elo) / 400))
+- **actual** = 1 (win), 0.5 (draw), 0 (loss)
+
+After 32,101 matches the current top ratings are:
+**Spain 2041 | Argentina 2035 | France 1995 | England 1919 | Brazil 1922**
+    """)
+
+    st.markdown("---")
+    st.markdown("### 📐 Dixon-Coles Goal Model")
+    st.markdown("""
+The Dixon-Coles model treats goals as independent Poisson processes:
+
+```
+P(home scores H goals) = Poisson(H | μ_home)
+P(away scores A goals) = Poisson(A | μ_away)
+```
+
+Where expected goals are:
+```
+μ_home = exp(attack_home − defence_away + home_advantage)
+μ_away = exp(attack_away − defence_home)
+```
+
+A **low-score correction factor τ** adjusts probabilities for 0-0, 1-0, 0-1, and 1-1
+scorelines, which occur more/less frequently than pure Poisson predicts.
+
+Model fitted via **maximum likelihood** (L-BFGS-B + Powell two-stage optimisation)
+on 2,686 competitive matches since 2018.
+
+Key fitted parameters:
+- **Home advantage**: 1.295× (playing at home increases expected goals by ~30%)
+- **ρ (rho)**: −0.059 (low-score correction)
+- **Log-likelihood**: −7,043.22 (converged ✅)
+    """)
+
+    st.markdown("---")
+    st.markdown("### 🔀 Elo + Form Fusion")
+    st.markdown("""
+Dixon-Coles captures historical goal patterns. To reflect **current team strength**,
+we fuse it with:
+
+1. **Elo difference** → multiplicative goal adjustment via 10^(Δelo/400 × weight)
+2. **Rolling form index** → points average over last 10 matches (3=win, 1=draw, 0=loss)
+
+This means a team like Argentina (Elo 2035, Form 2.35) correctly outperforms
+Brazil (Elo 1922, Form 1.60) despite Brazil's stronger Dixon-Coles historical params.
+    """)
+
+    st.markdown("---")
+    st.markdown("### 🎲 Monte Carlo Simulation")
+    st.markdown("""
+WorldSim runs **10,000 complete tournament simulations**:
+
+1. **Group stage** — full round-robin, 6 matches per group × 12 groups
+2. **Best third-place selection** — FIFA rules: top 8 of 12 third-placed teams by points → GD → GF
+3. **Round of 32 → Final** — knockout bracket with penalty shootout modelling for draws
+
+Each simulation independently samples match outcomes from the probability distributions,
+producing a distribution of outcomes rather than a single prediction.
+
+**Speed**: Pre-computed match cache (2,256 matchups) enables 10,000 simulations in ~9 seconds.
+    """)
+
+    st.markdown("---")
+    st.markdown("### 📊 Calibration")
+    st.markdown("""
+The model is designed to be **calibrated** — if we say a team has a 30% chance of winning,
+they should win roughly 30% of the time across many similar situations.
+
+Post-tournament (after July 2026), we will publish a full calibration analysis:
+- Predicted probability vs actual outcome frequency
+- Brier score and log-loss metrics
+- Comparison against bookmaker implied odds
+    """)
+
+    st.markdown("---")
+    st.markdown("### 👤 Built by")
+    st.markdown("""
+**Abdul Razak Bilal** — B.Tech CSE (AI & ML), GPREC Kurnool
+
+🔗 [LinkedIn](https://linkedin.com/in/abdul-razak-bilal) |
+🔗 [GitHub](https://github.com/abdulrazakbilal) |
+🔗 [Portfolio](https://abdulrazakbilal.github.io)
+    """)
