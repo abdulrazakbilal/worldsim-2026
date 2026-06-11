@@ -180,6 +180,7 @@ page = st.sidebar.radio("Navigate", [
     "🔄 Update Results",
     "📅 Today's Matches",
     "📖 Methodology",
+    "🏟️ Bracket",
 ])
 st.sidebar.markdown("---")
 st.sidebar.markdown("**Model Info**")
@@ -716,3 +717,109 @@ Post-tournament (after July 2026), we will publish a full calibration analysis:
 🔗 [GitHub](https://github.com/abdulrazakbilal) |
 🔗 [Portfolio](https://abdulrazakbilal.github.io)
     """)
+
+# ══════════════════════════════════════════════════════════════
+# PAGE: BRACKET
+# ══════════════════════════════════════════════════════════════
+elif page == "🏟️ Bracket":
+    st.subheader("🏟️ Round of 32 — Predicted Bracket")
+    st.markdown("Pre-tournament bracket based on model group stage predictions. "
+                "Win % shown for each match.")
+    st.markdown("---")
+
+    # Predicted group winners and runners-up based on simulation results
+    # Use top 2 from each group by group_qualify%
+    predicted_bracket = {}
+    for grp, teams in WC2026_GROUPS.items():
+        grp_data = results_df[results_df['team'].isin(teams)]\
+                   .sort_values('group_qualify%', ascending=False)
+        if len(grp_data) >= 2:
+            predicted_bracket[grp] = {
+                'winner':     grp_data.iloc[0]['team'],
+                'runner_up':  grp_data.iloc[1]['team'],
+                'w_qual':     grp_data.iloc[0]['group_qualify%'],
+                'r_qual':     grp_data.iloc[1]['group_qualify%'],
+            }
+
+    # Build R32 matchups (group winners vs runners-up / third place)
+    # Simplified: winners vs runners from opposite groups
+    r32_matchups = [
+        ('A winner', 'B runner'),  ('B winner', 'A runner'),
+        ('C winner', 'D runner'),  ('D winner', 'C runner'),
+        ('E winner', 'F runner'),  ('F winner', 'E runner'),
+        ('G winner', 'H runner'),  ('H winner', 'G runner'),
+        ('I winner', 'J runner'),  ('J winner', 'I runner'),
+        ('K winner', 'L runner'),  ('L winner', 'K runner'),
+        ('A winner', 'C runner'),  ('B winner', 'D runner'),
+        ('E winner', 'G runner'),  ('F winner', 'H runner'),
+    ]
+
+    # Display as a clean table
+    st.markdown("### Predicted Group Stage Outcomes")
+    group_cols = st.columns(3)
+    for i, (grp, data) in enumerate(predicted_bracket.items()):
+        with group_cols[i % 3]:
+            st.markdown(f"**Group {grp}**")
+            st.markdown(f"🥇 {data['winner']} `{data['w_qual']:.0f}%`")
+            st.markdown(f"🥈 {data['runner_up']} `{data['r_qual']:.0f}%`")
+            st.markdown("")
+
+    st.markdown("---")
+    st.markdown("### Round of 32 — Predicted Fixtures")
+    st.markdown("Based on most likely group stage outcomes:")
+
+    # Show predicted R32 fixtures with win probabilities
+    grp_keys = sorted(predicted_bracket.keys())
+    r32_fixtures = []
+
+    # Winners vs thirds (8 matches)
+    for i, grp in enumerate(grp_keys[:8]):
+        home = predicted_bracket[grp]['winner']
+        # pair with runner from next group
+        away_grp = grp_keys[(i + 6) % 12]
+        away = predicted_bracket[away_grp]['runner_up']
+        r32_fixtures.append((home, away, f"Group {grp} W vs Group {away_grp} R"))
+
+    # Remaining winners vs runners (8 matches)
+    for i, grp in enumerate(grp_keys[8:]):
+        home = predicted_bracket[grp]['winner']
+        away_grp = grp_keys[i]
+        away = predicted_bracket[away_grp]['runner_up']
+        r32_fixtures.append((home, away, f"Group {grp} W vs Group {away_grp} R"))
+
+    # Display in 2 columns
+    col_left, col_right = st.columns(2)
+    for i, (home, away, label) in enumerate(r32_fixtures[:16]):
+        pred = match_cache_knockout.get((home, away))
+        col = col_left if i % 2 == 0 else col_right
+        with col:
+            if pred:
+                hw = pred['home_win']*100
+                aw = pred['away_win']*100
+                dr = pred['draw']*100
+                winner = home if hw > aw else away
+                st.markdown(f"**{label}**")
+
+                fig_b, ax_b = plt.subplots(figsize=(5, 0.5))
+                fig_b.patch.set_facecolor('#0e1117')
+                ax_b.set_facecolor('#0e1117')
+                ax_b.barh([0],[hw], color='#00d4a4')
+                ax_b.barh([0],[dr], left=[hw], color='#555')
+                ax_b.barh([0],[aw], left=[hw+dr], color='#FF6B6B')
+                ax_b.set_xlim(0,100); ax_b.set_yticks([])
+                ax_b.spines[:].set_visible(False)
+                plt.tight_layout(pad=0)
+                st.pyplot(fig_b)
+
+                st.markdown(
+                    f"<span style='color:#00d4a4'>**{home}** {hw:.0f}%</span> "
+                    f"| Draw {dr:.0f}% | "
+                    f"<span style='color:#FF6B6B'>**{away}** {aw:.0f}%</span> "
+                    f"→ 🏆 *{winner} favoured*",
+                    unsafe_allow_html=True
+                )
+                st.markdown("")
+
+    st.markdown("---")
+    st.info("💡 This bracket updates after group stage results are entered in "
+           "the '🔄 Update Results' page.")
