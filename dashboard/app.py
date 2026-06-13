@@ -6,6 +6,7 @@ import json
 import sys
 import os
 from datetime import date, timedelta, datetime
+from collections import defaultdict
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
@@ -43,81 +44,113 @@ WC2026_GROUPS = {
 }
 all_wc_teams = sorted([t for grp in WC2026_GROUPS.values() for t in grp])
 
-# ── Full WC 2026 Fixture Schedule ────────────────────────────
+# ── OFFICIAL WC 2026 Fixture Schedule (verified ESPN/Yahoo) ──
 WC_FIXTURES = [
+    # June 11
     ("Mexico",        "South Africa",           "A", "2026-06-11"),
+    ("South Korea",   "Czechia",                "A", "2026-06-11"),
+    # June 12
     ("Canada",        "Bosnia and Herzegovina", "B", "2026-06-12"),
-    ("Germany",       "Curacao",                "E", "2026-06-12"),
+    ("Qatar",         "Switzerland",            "B", "2026-06-12"),
     ("United States", "Paraguay",               "D", "2026-06-12"),
-    ("Argentina",     "Algeria",                "J", "2026-06-13"),
-    ("Spain",         "Cape Verde",             "H", "2026-06-13"),
+    ("Australia",     "Turkey",                 "D", "2026-06-12"),
+    # June 13
     ("Brazil",        "Morocco",                "C", "2026-06-13"),
-    ("France",        "Senegal",                "I", "2026-06-14"),
-    ("England",       "Croatia",                "L", "2026-06-14"),
-    ("Portugal",      "DR Congo",               "K", "2026-06-14"),
+    ("Haiti",         "Scotland",               "C", "2026-06-13"),
+    # June 14
+    ("Germany",       "Curacao",                "E", "2026-06-14"),
+    ("Ivory Coast",   "Ecuador",                "E", "2026-06-14"),
     ("Netherlands",   "Japan",                  "F", "2026-06-14"),
+    ("Sweden",        "Tunisia",                "F", "2026-06-14"),
+    # June 15
+    ("Spain",         "Cape Verde",             "H", "2026-06-15"),
+    ("Saudi Arabia",  "Uruguay",                "H", "2026-06-15"),
     ("Belgium",       "Egypt",                  "G", "2026-06-15"),
-    ("South Korea",   "Czechia",                "A", "2026-06-15"),
-    ("Switzerland",   "Qatar",                  "B", "2026-06-15"),
-    ("Ecuador",       "Ivory Coast",            "E", "2026-06-15"),
-    ("Australia",     "Turkey",                 "D", "2026-06-16"),
+    ("Iran",          "New Zealand",            "G", "2026-06-15"),
+    # June 16
+    ("France",        "Senegal",                "I", "2026-06-16"),
+    ("Iraq",          "Norway",                 "I", "2026-06-16"),
+    ("Argentina",     "Algeria",                "J", "2026-06-16"),
     ("Austria",       "Jordan",                 "J", "2026-06-16"),
-    ("Uruguay",       "Saudi Arabia",           "H", "2026-06-16"),
-    ("Haiti",         "Scotland",               "C", "2026-06-16"),
-    ("Norway",        "Iraq",                   "I", "2026-06-17"),
-    ("Ghana",         "Panama",                 "L", "2026-06-17"),
+    # June 17
+    ("Portugal",      "DR Congo",               "K", "2026-06-17"),
     ("Uzbekistan",    "Colombia",               "K", "2026-06-17"),
-    ("Sweden",        "Tunisia",                "F", "2026-06-17"),
-    ("Iran",          "New Zealand",            "G", "2026-06-18"),
-    ("South Africa",  "South Korea",            "A", "2026-06-18"),
-    ("Bosnia and Herzegovina", "Switzerland",   "B", "2026-06-18"),
-    ("Curacao",       "Ecuador",                "E", "2026-06-19"),
+    ("England",       "Croatia",                "L", "2026-06-17"),
+    ("Ghana",         "Panama",                 "L", "2026-06-17"),
+    # June 18
+    ("Czechia",       "South Africa",           "A", "2026-06-18"),
+    ("Mexico",        "South Korea",            "A", "2026-06-18"),
+    ("Switzerland",   "Bosnia and Herzegovina", "B", "2026-06-18"),
+    ("Canada",        "Qatar",                  "B", "2026-06-18"),
+    # June 19
     ("Paraguay",      "Australia",              "D", "2026-06-19"),
-    ("Morocco",       "Haiti",                  "C", "2026-06-19"),
-    ("Algeria",       "Austria",                "J", "2026-06-19"),
-    ("Cape Verde",    "Uruguay",                "H", "2026-06-20"),
-    ("Senegal",       "Norway",                 "I", "2026-06-20"),
-    ("Croatia",       "Ghana",                  "L", "2026-06-20"),
-    ("DR Congo",      "Uzbekistan",             "K", "2026-06-20"),
-    ("Japan",         "Sweden",                 "F", "2026-06-21"),
-    ("Egypt",         "Iran",                   "G", "2026-06-21"),
-    ("Mexico",        "Czechia",                "A", "2026-06-21"),
-    ("Canada",        "Qatar",                  "B", "2026-06-21"),
-    ("Germany",       "Australia",              "E", "2026-06-22"),
-    ("United States", "Turkey",                 "D", "2026-06-22"),
-    ("Brazil",        "Scotland",               "C", "2026-06-22"),
-    ("France",        "Iraq",                   "I", "2026-06-22"),
-    ("Argentina",     "Jordan",                 "J", "2026-06-23"),
+    ("United States", "Turkey",                 "D", "2026-06-19"),
+    ("Scotland",      "Morocco",                "C", "2026-06-19"),
+    ("Brazil",        "Haiti",                  "C", "2026-06-19"),
+    # June 20
+    ("Ecuador",       "Germany",                "E", "2026-06-20"),
+    ("Curacao",       "Ivory Coast",            "E", "2026-06-20"),
+    ("Tunisia",       "Netherlands",            "F", "2026-06-20"),
+    ("Japan",         "Sweden",                 "F", "2026-06-20"),
+    # June 21
+    ("Cape Verde",    "Saudi Arabia",           "H", "2026-06-21"),
+    ("Uruguay",       "Spain",                  "H", "2026-06-21"),
+    ("Egypt",         "New Zealand",            "G", "2026-06-21"),
+    ("Belgium",       "Iran",                   "G", "2026-06-21"),
+    # June 22
+    ("Norway",        "France",                 "I", "2026-06-22"),
+    ("Senegal",       "Iraq",                   "I", "2026-06-22"),
+    ("Algeria",       "Austria",                "J", "2026-06-22"),
+    ("Jordan",        "Argentina",              "J", "2026-06-22"),
+    # June 23
+    ("Colombia",      "Portugal",               "K", "2026-06-23"),
+    ("DR Congo",      "Uzbekistan",             "K", "2026-06-23"),
+    ("Croatia",       "Ghana",                  "L", "2026-06-23"),
     ("England",       "Panama",                 "L", "2026-06-23"),
-    ("Spain",         "Saudi Arabia",           "H", "2026-06-23"),
-    ("Portugal",      "Colombia",               "K", "2026-06-23"),
-    ("Netherlands",   "Tunisia",                "F", "2026-06-24"),
-    ("Belgium",       "New Zealand",            "G", "2026-06-24"),
-    ("South Korea",   "South Africa",           "A", "2026-06-24"),
-    ("Switzerland",   "Bosnia and Herzegovina", "B", "2026-06-24"),
-    ("Ivory Coast",   "Germany",                "E", "2026-06-25"),
+    # June 24
+    ("South Africa",  "South Korea",            "A", "2026-06-24"),
+    ("Czechia",       "Mexico",                 "A", "2026-06-24"),
+    ("Bosnia and Herzegovina", "Qatar",         "B", "2026-06-24"),
+    ("Switzerland",   "Canada",                 "B", "2026-06-24"),
+    # June 25
     ("Turkey",        "Paraguay",               "D", "2026-06-25"),
-    ("Scotland",      "Morocco",                "C", "2026-06-25"),
-    ("Iraq",          "Senegal",                "I", "2026-06-25"),
-    ("Jordan",        "Algeria",                "J", "2026-06-25"),
-    ("Panama",        "Croatia",                "L", "2026-06-25"),
-    ("Saudi Arabia",  "Cape Verde",             "H", "2026-06-26"),
-    ("Colombia",      "DR Congo",               "K", "2026-06-26"),
-    ("Tunisia",       "Japan",                  "F", "2026-06-26"),
-    ("New Zealand",   "Egypt",                  "G", "2026-06-26"),
-    ("Czechia",       "Mexico",                 "A", "2026-06-27"),
-    ("Qatar",         "Canada",                 "B", "2026-06-27"),
-    ("Ecuador",       "Germany",                "E", "2026-06-27"),
-    ("Australia",     "United States",          "D", "2026-06-27"),
-    ("Haiti",         "Brazil",                 "C", "2026-06-27"),
-    ("Norway",        "France",                 "I", "2026-06-27"),
+    ("Australia",     "United States",          "D", "2026-06-25"),
+    ("Morocco",       "Haiti",                  "C", "2026-06-25"),
+    ("Scotland",      "Brazil",                 "C", "2026-06-25"),
+    # June 26
+    ("Ivory Coast",   "Curacao",                "E", "2026-06-26"),
+    ("Germany",       "Ecuador",                "E", "2026-06-26"),
+    ("Japan",         "Tunisia",                "F", "2026-06-26"),
+    ("Sweden",        "Netherlands",            "F", "2026-06-26"),
+    # June 27
+    ("New Zealand",   "Belgium",                "G", "2026-06-27"),
+    ("Egypt",         "Iran",                   "G", "2026-06-27"),
+    ("Cape Verde",    "Uruguay",                "H", "2026-06-27"),
+    ("Saudi Arabia",  "Spain",                  "H", "2026-06-27"),
+    ("Iraq",          "France",                 "I", "2026-06-27"),
+    ("Norway",        "Senegal",                "I", "2026-06-27"),
+    ("Algeria",       "Jordan",                 "J", "2026-06-27"),
     ("Austria",       "Argentina",              "J", "2026-06-27"),
-    ("Ghana",         "England",                "L", "2026-06-27"),
-    ("Uruguay",       "Spain",                  "H", "2026-06-27"),
+    ("DR Congo",      "Colombia",               "K", "2026-06-27"),
     ("Uzbekistan",    "Portugal",               "K", "2026-06-27"),
-    ("Sweden",        "Netherlands",            "F", "2026-06-27"),
-    ("Iran",          "Belgium",                "G", "2026-06-27"),
+    ("Ghana",         "Croatia",                "L", "2026-06-27"),
+    ("Panama",        "England",                "L", "2026-06-27"),
 ]
+
+# ── Session state for live results ───────────────────────────
+if 'results_log' not in st.session_state:
+    st.session_state.results_log = []  # list of (home, away, hg, ag)
+
+if 'live_elo' not in st.session_state:
+    st.session_state.live_elo = {}  # will be populated after load
+
+if 'points_table' not in st.session_state:
+    # Initialize empty points table for all teams
+    st.session_state.points_table = {
+        team: {'pts': 0, 'w': 0, 'd': 0, 'l': 0,
+               'gf': 0, 'ga': 0, 'gd': 0, 'gp': 0}
+        for grp in WC2026_GROUPS.values() for team in grp
+    }
 
 # ── Load data ────────────────────────────────────────────────
 @st.cache_data
@@ -138,13 +171,13 @@ def build_match_cache(_team_features):
     if 'Czechia' not in tf.index:
         tf.loc['Czechia'] = {'elo': 1780, 'form': 1.8}
 
-    def elo_win_prob(home, away):
-        if home not in tf.index or away not in tf.index:
+    def elo_win_prob(home, away, tf_local):
+        if home not in tf_local.index or away not in tf_local.index:
             return 0.4, 0.2, 0.4
-        elo_h    = tf.loc[home, 'elo']
-        elo_a    = tf.loc[away, 'elo']
-        form_h   = tf.loc[home, 'form']
-        form_a   = tf.loc[away, 'form']
+        elo_h    = tf_local.loc[home, 'elo']
+        elo_a    = tf_local.loc[away, 'elo']
+        form_h   = tf_local.loc[home, 'form']
+        form_a   = tf_local.loc[away, 'form']
         exp_h    = 1 / (1 + 10 ** ((elo_a - elo_h) / 400))
         form_adj = ((form_h + 0.5) / (form_a + 0.5)) ** 0.15
         exp_h    = float(np.clip(exp_h * form_adj, 0.05, 0.95))
@@ -157,7 +190,7 @@ def build_match_cache(_team_features):
     for home in all_wc_teams:
         for away in all_wc_teams:
             if home != away:
-                w, d, l = elo_win_prob(home, away)
+                w, d, l = elo_win_prob(home, away, tf)
                 cache_knockout[(home, away)] = {
                     'home_win': w, 'draw': d, 'away_win': l,
                     'mu_h': max(w*1.5, 0.3), 'mu_a': max(l*1.5, 0.3)
@@ -169,6 +202,66 @@ results_df, team_features, model_data = load_data()
 with st.spinner("⚙️ Building match probability cache..."):
     match_cache_knockout, team_features = build_match_cache(team_features)
 
+# Initialize live_elo from team_features if empty
+if not st.session_state.live_elo:
+    st.session_state.live_elo = team_features['elo'].to_dict()
+
+def get_live_pred(home, away):
+    """Get win probability using live (updated) Elo ratings."""
+    elo_h  = st.session_state.live_elo.get(home, 1500)
+    elo_a  = st.session_state.live_elo.get(away, 1500)
+    exp_h  = 1 / (1 + 10 ** ((elo_a - elo_h) / 400))
+    exp_h  = float(np.clip(exp_h, 0.05, 0.95))
+    draw   = float(np.clip(0.28 * (1 - abs(exp_h - 0.5) * 1.2), 0.18, 0.30))
+    win_h  = exp_h * (1 - draw)
+    win_a  = (1 - exp_h) * (1 - draw)
+    return win_h, draw, win_a
+
+def update_elo_after_result(home, away, hg, ag):
+    """Update live Elo ratings after a match result."""
+    elo_h = st.session_state.live_elo.get(home, 1500)
+    elo_a = st.session_state.live_elo.get(away, 1500)
+    exp_h = 1 / (1 + 10 ** ((elo_a - elo_h) / 400))
+    if hg > ag:
+        s_h, s_a = 1.0, 0.0
+    elif ag > hg:
+        s_h, s_a = 0.0, 1.0
+    else:
+        s_h, s_a = 0.5, 0.5
+    k = 32
+    st.session_state.live_elo[home] = elo_h + k * (s_h - exp_h)
+    st.session_state.live_elo[away] = elo_a + k * (s_a - (1 - exp_h))
+
+def update_points_table(home, away, hg, ag):
+    """Update group standings after a result."""
+    t = st.session_state.points_table
+    t[home]['gp'] += 1; t[away]['gp'] += 1
+    t[home]['gf'] += hg; t[home]['ga'] += ag
+    t[away]['gf'] += ag; t[away]['ga'] += hg
+    t[home]['gd'] = t[home]['gf'] - t[home]['ga']
+    t[away]['gd'] = t[away]['gf'] - t[away]['ga']
+    if hg > ag:
+        t[home]['pts'] += 3; t[home]['w'] += 1; t[away]['l'] += 1
+    elif ag > hg:
+        t[away]['pts'] += 3; t[away]['w'] += 1; t[home]['l'] += 1
+    else:
+        t[home]['pts'] += 1; t[home]['d'] += 1
+        t[away]['pts'] += 1; t[away]['d'] += 1
+
+def match_already_entered(home, away):
+    """Check if a match result has already been entered."""
+    for r in st.session_state.results_log:
+        if r[0] == home and r[1] == away:
+            return True
+    return False
+
+def get_completed_teams():
+    """Teams that have played at least one match."""
+    completed = set()
+    for r in st.session_state.results_log:
+        completed.add(r[0]); completed.add(r[1])
+    return completed
+
 # ── Sidebar ──────────────────────────────────────────────────
 st.sidebar.title("🏆 WorldSim 2026")
 st.sidebar.markdown("---")
@@ -178,6 +271,7 @@ page = st.sidebar.radio("Navigate", [
     "🗂️ Group Explorer",
     "📈 Path Probabilities",
     "🔄 Update Results",
+    "📊 Live Standings",
     "📅 Today's Matches",
     "📖 Methodology",
     "🏟️ Bracket",
@@ -187,7 +281,7 @@ st.sidebar.markdown("**Model Info**")
 st.sidebar.markdown("- Elo + Form fusion")
 st.sidebar.markdown("- Dixon-Coles goal model")
 st.sidebar.markdown("- 10,000 Monte Carlo sims")
-st.sidebar.markdown("- Updated: May 2026")
+st.sidebar.markdown(f"- Matches entered: {len(st.session_state.results_log)}")
 
 # ── Header ────────────────────────────────────────────────────
 st.title("🏆 WorldSim 2026")
@@ -244,7 +338,7 @@ if page == "🏠 Overview":
 # ══════════════════════════════════════════════════════════════
 elif page == "⚔️ Match Predictor":
     st.subheader("⚔️ Head-to-Head Match Predictor")
-    st.markdown("Select any two teams to see win probabilities and tournament path comparison.")
+    st.markdown("Probabilities update in real-time based on results entered in 🔄 Update Results.")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -257,74 +351,66 @@ elif page == "⚔️ Match Predictor":
     if home_team == away_team:
         st.warning("Please select two different teams.")
     else:
-        pred = match_cache_knockout.get((home_team, away_team))
-        if pred:
-            hw = pred['home_win'] * 100
-            dr = pred['draw']     * 100
-            aw = pred['away_win'] * 100
+        hw, dr, aw = get_live_pred(home_team, away_team)
+        hw *= 100; dr *= 100; aw *= 100
 
-            st.markdown(f"### {home_team}  vs  {away_team}")
-            c1, c2, c3 = st.columns(3)
-            with c1: st.metric(f"🟢 {home_team}", f"{hw:.1f}%")
-            with c2: st.metric("🤝 Draw",          f"{dr:.1f}%")
-            with c3: st.metric(f"🔴 {away_team}",  f"{aw:.1f}%")
+        st.markdown(f"### {home_team}  vs  {away_team}")
 
-            fig2, ax2 = plt.subplots(figsize=(10, 1.5))
-            fig2.patch.set_facecolor('#0e1117')
-            ax2.set_facecolor('#0e1117')
-            ax2.barh([0], [hw],    color='#00d4a4')
-            ax2.barh([0], [dr],    left=[hw],    color='#888888')
-            ax2.barh([0], [aw],    left=[hw+dr], color='#FF6B6B')
-            ax2.set_xlim(0, 100)
-            ax2.set_yticks([])
-            ax2.spines[:].set_visible(False)
-            ax2.tick_params(colors='white')
-            for val, left, clr in [(hw, hw/2, 'black'),
-                                   (dr, hw+dr/2, 'white'),
-                                   (aw, hw+dr+aw/2, 'black')]:
-                if val > 8:
-                    ax2.text(left, 0, f'{val:.0f}%', ha='center',
-                            va='center', color=clr, fontweight='bold', fontsize=11)
-            plt.tight_layout()
-            st.pyplot(fig2)
+        # Show if Elo has been updated
+        if len(st.session_state.results_log) > 0:
+            st.info(f"📡 Using live Elo ratings — updated after "
+                   f"{len(st.session_state.results_log)} match(es)")
 
-            st.markdown("#### Tournament path comparison")
-            h_row = results_df[results_df['team']==home_team]
-            a_row = results_df[results_df['team']==away_team]
-            if not h_row.empty and not a_row.empty:
-                h_row = h_row.iloc[0]
-                a_row = a_row.iloc[0]
-                stages = ['reach_R16%','reach_QF%','reach_SF%','reach_Final%','champion%']
-                labels = ['R16','QF','SF','Final','🏆']
-                fig3, ax3 = plt.subplots(figsize=(10, 4))
-                fig3.patch.set_facecolor('#0e1117')
-                ax3.set_facecolor('#1e2130')
-                x = np.arange(len(labels))
-                w = 0.35
-                ax3.bar(x-w/2, [h_row[s] for s in stages], w,
-                       label=home_team, color='#00d4a4')
-                ax3.bar(x+w/2, [a_row[s] for s in stages], w,
-                       label=away_team, color='#FF6B6B')
-                ax3.set_xticks(x)
-                ax3.set_xticklabels(labels, color='white', fontsize=12)
-                ax3.set_ylabel('Probability (%)', color='white')
-                ax3.set_title('Tournament Path Comparison',
-                             color='white', fontweight='bold')
-                ax3.legend(facecolor='#1e2130', labelcolor='white')
-                ax3.tick_params(colors='white')
-                ax3.spines[:].set_color('#444')
-                ax3.grid(axis='y', alpha=0.2, color='white')
-                plt.tight_layout()
-                st.pyplot(fig3)
-        else:
-            st.warning("Match data not available.")
+        c1, c2, c3 = st.columns(3)
+        with c1: st.metric(f"🟢 {home_team}", f"{hw:.1f}%")
+        with c2: st.metric("🤝 Draw",          f"{dr:.1f}%")
+        with c3: st.metric(f"🔴 {away_team}",  f"{aw:.1f}%")
+
+        fig2, ax2 = plt.subplots(figsize=(10, 1.5))
+        fig2.patch.set_facecolor('#0e1117')
+        ax2.set_facecolor('#0e1117')
+        ax2.barh([0], [hw],    color='#00d4a4')
+        ax2.barh([0], [dr],    left=[hw],    color='#888888')
+        ax2.barh([0], [aw],    left=[hw+dr], color='#FF6B6B')
+        ax2.set_xlim(0, 100); ax2.set_yticks([])
+        ax2.spines[:].set_visible(False)
+        ax2.tick_params(colors='white')
+        for val, left, clr in [(hw, hw/2, 'black'),
+                               (dr, hw+dr/2, 'white'),
+                               (aw, hw+dr+aw/2, 'black')]:
+            if val > 8:
+                ax2.text(left, 0, f'{val:.0f}%', ha='center',
+                        va='center', color=clr, fontweight='bold', fontsize=11)
+        plt.tight_layout()
+        st.pyplot(fig2)
+
+        st.markdown("#### Tournament path comparison")
+        h_row = results_df[results_df['team']==home_team]
+        a_row = results_df[results_df['team']==away_team]
+        if not h_row.empty and not a_row.empty:
+            h_row = h_row.iloc[0]; a_row = a_row.iloc[0]
+            stages = ['reach_R16%','reach_QF%','reach_SF%','reach_Final%','champion%']
+            labels = ['R16','QF','SF','Final','🏆']
+            fig3, ax3 = plt.subplots(figsize=(10, 4))
+            fig3.patch.set_facecolor('#0e1117'); ax3.set_facecolor('#1e2130')
+            x = np.arange(len(labels)); w = 0.35
+            ax3.bar(x-w/2, [h_row[s] for s in stages], w,
+                   label=home_team, color='#00d4a4')
+            ax3.bar(x+w/2, [a_row[s] for s in stages], w,
+                   label=away_team, color='#FF6B6B')
+            ax3.set_xticks(x); ax3.set_xticklabels(labels, color='white', fontsize=12)
+            ax3.set_ylabel('Probability (%)', color='white')
+            ax3.set_title('Tournament Path Comparison', color='white', fontweight='bold')
+            ax3.legend(facecolor='#1e2130', labelcolor='white')
+            ax3.tick_params(colors='white'); ax3.spines[:].set_color('#444')
+            ax3.grid(axis='y', alpha=0.2, color='white')
+            plt.tight_layout(); st.pyplot(fig3)
 
 # ══════════════════════════════════════════════════════════════
 # PAGE: GROUP EXPLORER
 # ══════════════════════════════════════════════════════════════
 elif page == "🗂️ Group Explorer":
     st.subheader("🗂️ Group Stage Explorer")
-
     selected_group = st.selectbox("Select Group",
         [f"Group {k} — {' | '.join(v)}" for k, v in WC2026_GROUPS.items()])
     group_letter = selected_group.split()[1]
@@ -341,28 +427,19 @@ elif page == "🗂️ Group Explorer":
     st.markdown("---")
 
     fig4, ax4 = plt.subplots(figsize=(10, 5))
-    fig4.patch.set_facecolor('#0e1117')
-    ax4.set_facecolor('#1e2130')
-    teams = group_data['team'].tolist()
-    x = np.arange(len(teams))
-    w = 0.25
-    ax4.bar(x-w, group_data['group_qualify%'].values, w,
-            label='Qualify', color='#00d4a4')
-    ax4.bar(x,   group_data['reach_QF%'].values,      w,
-            label='Reach QF', color='#FFD700')
-    ax4.bar(x+w, group_data['champion%'].values,      w,
-            label='Champion', color='#FF6B6B')
-    ax4.set_xticks(x)
-    ax4.set_xticklabels(teams, color='white', fontsize=11)
+    fig4.patch.set_facecolor('#0e1117'); ax4.set_facecolor('#1e2130')
+    teams = group_data['team'].tolist(); x = np.arange(len(teams)); w = 0.25
+    ax4.bar(x-w, group_data['group_qualify%'].values, w, label='Qualify', color='#00d4a4')
+    ax4.bar(x,   group_data['reach_QF%'].values,      w, label='Reach QF', color='#FFD700')
+    ax4.bar(x+w, group_data['champion%'].values,      w, label='Champion', color='#FF6B6B')
+    ax4.set_xticks(x); ax4.set_xticklabels(teams, color='white', fontsize=11)
     ax4.set_ylabel('Probability (%)', color='white')
     ax4.set_title(f'Group {group_letter} — Team Probabilities',
                  color='white', fontweight='bold', fontsize=13)
     ax4.legend(facecolor='#1e2130', labelcolor='white')
-    ax4.tick_params(colors='white')
-    ax4.spines[:].set_color('#444')
+    ax4.tick_params(colors='white'); ax4.spines[:].set_color('#444')
     ax4.grid(axis='y', alpha=0.2, color='white')
-    plt.tight_layout()
-    st.pyplot(fig4)
+    plt.tight_layout(); st.pyplot(fig4)
 
     st.markdown("---")
     st.dataframe(
@@ -378,8 +455,6 @@ elif page == "🗂️ Group Explorer":
 # ══════════════════════════════════════════════════════════════
 elif page == "📈 Path Probabilities":
     st.subheader("📈 Team Tournament Path")
-    st.markdown("Track any team's probability at each stage.")
-
     selected_team = st.selectbox("Select Team", results_df['team'].tolist())
     row    = results_df[results_df['team']==selected_team].iloc[0]
     stages = ['group_qualify%','reach_R16%','reach_QF%',
@@ -391,148 +466,197 @@ elif page == "📈 Path Probabilities":
     for i, (lbl, val) in enumerate(zip(labels, values)):
         with cols[i]: st.metric(lbl, f"{val:.1f}%")
 
+    # Show live Elo
+    if selected_team in st.session_state.live_elo:
+        orig_elo = team_features.loc[selected_team, 'elo'] if selected_team in team_features.index else 1500
+        live_elo = st.session_state.live_elo[selected_team]
+        delta    = live_elo - orig_elo
+        if abs(delta) > 0.1:
+            st.info(f"📡 {selected_team} Elo: {orig_elo:.0f} → **{live_elo:.0f}** ({delta:+.1f} after tournament results)")
+
     fig5, ax5 = plt.subplots(figsize=(12, 5))
-    fig5.patch.set_facecolor('#0e1117')
-    ax5.set_facecolor('#1e2130')
-    ax5.plot(labels, values, color='#00d4a4',
-             linewidth=2.5, marker='o', markersize=8)
+    fig5.patch.set_facecolor('#0e1117'); ax5.set_facecolor('#1e2130')
+    ax5.plot(labels, values, color='#00d4a4', linewidth=2.5, marker='o', markersize=8)
     ax5.fill_between(range(len(labels)), values, alpha=0.15, color='#00d4a4')
     for i, val in enumerate(values):
-        ax5.annotate(f'{val:.1f}%', (i, val),
-                    textcoords="offset points", xytext=(0, 12),
-                    ha='center', color='white', fontsize=10)
-    ax5.set_xticks(range(len(labels)))
-    ax5.set_xticklabels(labels, color='white', fontsize=11)
+        ax5.annotate(f'{val:.1f}%', (i, val), textcoords="offset points",
+                    xytext=(0, 12), ha='center', color='white', fontsize=10)
+    ax5.set_xticks(range(len(labels))); ax5.set_xticklabels(labels, color='white', fontsize=11)
     ax5.set_ylabel('Probability (%)', color='white')
     ax5.set_title(f'{selected_team} — Tournament Path Probabilities',
                  color='white', fontweight='bold', fontsize=13)
-    ax5.tick_params(colors='white')
-    ax5.spines[:].set_color('#444')
+    ax5.tick_params(colors='white'); ax5.spines[:].set_color('#444')
     ax5.grid(alpha=0.2, color='white')
-    plt.tight_layout()
-    st.pyplot(fig5)
+    plt.tight_layout(); st.pyplot(fig5)
 
 # ══════════════════════════════════════════════════════════════
 # PAGE: UPDATE RESULTS
 # ══════════════════════════════════════════════════════════════
 elif page == "🔄 Update Results":
     st.subheader("🔄 Live Match Result Entry")
-    st.markdown("Enter real match results as the tournament progresses. "
-                "The model will show how probabilities would shift.")
-    st.info("🗓️ Tournament starts June 11, 2026 — Group Stage Day 1")
+    st.markdown("Enter real match results. Elo ratings update automatically after each result.")
 
-    st.markdown("#### Enter a match result")
-    col1, col2, col3 = st.columns([2, 1, 2])
-    with col1:
-        team_a = st.selectbox("Home Team", all_wc_teams,
-                               index=all_wc_teams.index('Mexico'))
-    with col2:
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        st.markdown("### vs")
-    with col3:
-        team_b = st.selectbox("Away Team", all_wc_teams,
-                               index=all_wc_teams.index('South Africa'))
-
-    col4, col5 = st.columns(2)
-    with col4:
-        score_a = st.number_input(f"{team_a} goals",
-                                   min_value=0, max_value=20, value=0)
-    with col5:
-        score_b = st.number_input(f"{team_b} goals",
-                                   min_value=0, max_value=20, value=0)
-
-    st.selectbox("Tournament stage", [
-        "Group Stage", "Round of 32", "Round of 16",
-        "Quarter Final", "Semi Final", "Final"
-    ])
-
-    if st.button("⚡ Analyse Result", type="primary"):
-        st.markdown(f"### Result: {team_a} {int(score_a)} — {int(score_b)} {team_b}")
-
-        if team_a in team_features.index and team_b in team_features.index:
-            elo_a = team_features.loc[team_a, 'elo']
-            elo_b = team_features.loc[team_b, 'elo']
-            exp_a = 1 / (1 + 10 ** ((elo_b - elo_a) / 400))
-
-            if score_a > score_b:
-                actual_a, actual_b = 1.0, 0.0
-                result_str = f"✅ {team_a} WIN"
-            elif score_b > score_a:
-                actual_a, actual_b = 0.0, 1.0
-                result_str = f"✅ {team_b} WIN"
-            else:
-                actual_a, actual_b = 0.5, 0.5
-                result_str = "🤝 DRAW"
-
-            k = 32
-            new_elo_a = elo_a + k * (actual_a - exp_a)
-            new_elo_b = elo_b + k * (actual_b - (1 - exp_a))
-            delta_a = new_elo_a - elo_a
-            delta_b = new_elo_b - elo_b
-
-            st.markdown(f"**{result_str}**")
-            st.markdown("---")
-            st.markdown("#### ⚡ Elo Rating Changes")
-            c1, c2 = st.columns(2)
-            with c1:
-                st.metric(team_a, f"{new_elo_a:.0f}", f"{delta_a:+.1f}")
-                st.markdown(f"*Was {elo_a:.0f} → Now {new_elo_a:.0f}*")
-            with c2:
-                st.metric(team_b, f"{new_elo_b:.0f}", f"{delta_b:+.1f}")
-                st.markdown(f"*Was {elo_b:.0f} → Now {new_elo_b:.0f}*")
-
-            pre_match = match_cache_knockout.get((team_a, team_b))
-            if pre_match:
-                model_fav = team_a if pre_match['home_win'] > pre_match['away_win'] \
-                            else team_b
-                if score_a > score_b:
-                    actual_winner = team_a
-                elif score_b > score_a:
-                    actual_winner = team_b
-                else:
-                    actual_winner = "Draw"
-
-                st.markdown("---")
-                st.markdown("#### 🚨 Upset Analysis")
-                if actual_winner != "Draw" and actual_winner != model_fav:
-                    upset_prob = pre_match['away_win'] if actual_winner == team_b \
-                                 else pre_match['home_win']
-                    st.error(f"⚠️ UPSET DETECTED! Model gave {actual_winner} only "
-                            f"{upset_prob*100:.1f}% chance of winning.")
-                elif actual_winner == "Draw":
-                    st.info(f"Draw — model gave {pre_match['draw']*100:.1f}% "
-                           f"probability to this outcome.")
-                else:
-                    fav_prob = pre_match['home_win'] if model_fav == team_a \
-                               else pre_match['away_win']
-                    st.success(f"✅ Favourite won as expected "
-                              f"({fav_prob*100:.1f}% pre-match probability).")
-
-            st.markdown("---")
-            st.info("💡 After the group stage ends, re-run the Monte Carlo simulation "
-                   "with updated Elo ratings to refresh all championship probabilities.")
-        else:
-            st.warning("Team data not available for Elo calculation.")
+    if st.session_state.results_log:
+        st.success(f"✅ {len(st.session_state.results_log)} result(s) entered this session")
+        with st.expander("View entered results"):
+            for r in st.session_state.results_log:
+                st.markdown(f"- **{r[0]} {r[2]} – {r[3]} {r[1]}**")
 
     st.markdown("---")
-    st.markdown("#### 📋 Opening Day Fixtures — June 11-12")
-    day1 = [
-        ("Mexico",        "South Africa",           "Group A", "Jun 11"),
-        ("United States", "Paraguay",               "Group D", "Jun 12"),
-        ("Canada",        "Bosnia and Herzegovina", "Group B", "Jun 12"),
-        ("Germany",       "Curacao",                "Group E", "Jun 12"),
-    ]
-    for ta, tb, grp, dt in day1:
-        pred = match_cache_knockout.get((ta, tb))
-        if pred:
-            c1, c2, c3, c4 = st.columns([2, 1, 2, 3])
-            with c1: st.markdown(f"**{ta}**")
-            with c2: st.markdown("vs")
-            with c3: st.markdown(f"**{tb}**")
-            with c4:
-                st.markdown(f"{grp} | {dt} | "
-                           f"{ta}: {pred['home_win']*100:.0f}% — "
-                           f"{tb}: {pred['away_win']*100:.0f}%")
+    st.markdown("#### Select a fixture to update")
+
+    # Show only fixtures that haven't been entered yet
+    today_str = date.today().strftime("%Y-%m-%d")
+    available = [(ta, tb, grp, d) for ta, tb, grp, d in WC_FIXTURES
+                 if d <= today_str and not match_already_entered(ta, tb)]
+    completed_fixtures = [(ta, tb, grp, d) for ta, tb, grp, d in WC_FIXTURES
+                          if match_already_entered(ta, tb)]
+
+    if available:
+        fixture_labels = [f"Group {grp} | {ta} vs {tb} ({d})"
+                         for ta, tb, grp, d in available]
+        selected_fixture = st.selectbox("Choose match", fixture_labels)
+        idx = fixture_labels.index(selected_fixture)
+        sel_home, sel_away, sel_grp, sel_date = available[idx]
+
+        # Show pre-match probability
+        hw, dr, aw = get_live_pred(sel_home, sel_away)
+        st.markdown(f"**Pre-match odds:** {sel_home} {hw*100:.0f}% | "
+                   f"Draw {dr*100:.0f}% | {sel_away} {aw*100:.0f}%")
+
+        col4, col5 = st.columns(2)
+        with col4:
+            score_a = st.number_input(f"{sel_home} goals",
+                                       min_value=0, max_value=20, value=0, key="score_h")
+        with col5:
+            score_b = st.number_input(f"{sel_away} goals",
+                                       min_value=0, max_value=20, value=0, key="score_a")
+
+        if st.button("⚡ Submit Result", type="primary"):
+            hg, ag = int(score_a), int(score_b)
+
+            # Update Elo
+            old_elo_h = st.session_state.live_elo.get(sel_home, 1500)
+            old_elo_a = st.session_state.live_elo.get(sel_away, 1500)
+            update_elo_after_result(sel_home, sel_away, hg, ag)
+            new_elo_h = st.session_state.live_elo[sel_home]
+            new_elo_a = st.session_state.live_elo[sel_away]
+
+            # Update points table
+            update_points_table(sel_home, sel_away, hg, ag)
+
+            # Log result
+            st.session_state.results_log.append((sel_home, sel_away, hg, ag))
+
+            # Show result
+            if hg > ag:
+                result_str = f"✅ {sel_home} WIN"
+            elif ag > hg:
+                result_str = f"✅ {sel_away} WIN"
+            else:
+                result_str = "🤝 DRAW"
+
+            st.markdown(f"### {sel_home} {hg} — {ag} {sel_away}")
+            st.markdown(f"**{result_str}**")
+            st.markdown("---")
+
+            col1, col2 = st.columns(2)
+            with col1:
+                delta_h = new_elo_h - old_elo_h
+                st.metric(sel_home, f"{new_elo_h:.0f}", f"{delta_h:+.1f}")
+                st.markdown(f"*{old_elo_h:.0f} → {new_elo_h:.0f}*")
+            with col2:
+                delta_a = new_elo_a - old_elo_a
+                st.metric(sel_away, f"{new_elo_a:.0f}", f"{delta_a:+.1f}")
+                st.markdown(f"*{old_elo_a:.0f} → {new_elo_a:.0f}*")
+
+            # Upset analysis
+            if hg > ag:
+                actual_winner = sel_home
+            elif ag > hg:
+                actual_winner = sel_away
+            else:
+                actual_winner = "Draw"
+
+            model_fav = sel_home if hw > aw else sel_away
+
+            st.markdown("---")
+            st.markdown("#### 🚨 Upset Analysis")
+            if actual_winner != "Draw" and actual_winner != model_fav:
+                upset_prob = aw if actual_winner == sel_away else hw
+                st.error(f"⚠️ UPSET! Model gave {actual_winner} only "
+                        f"{upset_prob*100:.1f}% chance of winning.")
+            elif actual_winner == "Draw":
+                st.info(f"Draw — model gave {dr*100:.1f}% probability.")
+            else:
+                fav_prob = hw if model_fav == sel_home else aw
+                st.success(f"✅ Favourite won ({fav_prob*100:.1f}% pre-match).")
+
+            st.info("💡 Go to **⚔️ Match Predictor** to see updated probabilities, "
+                   "or **📊 Live Standings** for the current group table.")
+            st.rerun()
+    else:
+        if not WC_FIXTURES:
+            st.info("No fixtures available yet.")
+        else:
+            st.success("✅ All available fixtures entered! Check back after more matches.")
+
+    if completed_fixtures:
+        st.markdown("---")
+        st.markdown("#### ✅ Already Entered")
+        for ta, tb, grp, d in completed_fixtures:
+            for r in st.session_state.results_log:
+                if r[0] == ta and r[1] == tb:
+                    st.markdown(f"Group {grp} | {ta} **{r[2]}–{r[3]}** {tb} ✓")
+
+    if st.button("🔄 Reset All Results", type="secondary"):
+        st.session_state.results_log = []
+        st.session_state.live_elo = team_features['elo'].to_dict()
+        st.session_state.points_table = {
+            team: {'pts': 0, 'w': 0, 'd': 0, 'l': 0,
+                   'gf': 0, 'ga': 0, 'gd': 0, 'gp': 0}
+            for grp in WC2026_GROUPS.values() for team in grp
+        }
+        st.rerun()
+
+# ══════════════════════════════════════════════════════════════
+# PAGE: LIVE STANDINGS
+# ══════════════════════════════════════════════════════════════
+elif page == "📊 Live Standings":
+    st.subheader("📊 Live Group Stage Standings")
+
+    if not st.session_state.results_log:
+        st.info("No results entered yet. Go to **🔄 Update Results** to enter match results.")
+    else:
+        st.markdown(f"*Updated after {len(st.session_state.results_log)} match(es)*")
+
+    for grp_letter, teams in WC2026_GROUPS.items():
+        st.markdown(f"### Group {grp_letter}")
+        table_data = []
+        for team in teams:
+            t = st.session_state.points_table[team]
+            table_data.append({
+                'Team': team,
+                'GP': t['gp'], 'W': t['w'], 'D': t['d'], 'L': t['l'],
+                'GF': t['gf'], 'GA': t['ga'], 'GD': t['gd'], 'Pts': t['pts']
+            })
+        table_df = pd.DataFrame(table_data)\
+                   .sort_values(['Pts','GD','GF'], ascending=False)\
+                   .reset_index(drop=True)
+        table_df.index = table_df.index + 1
+
+        # Highlight top 2
+        def highlight_top2(row):
+            if row.name <= 2:
+                return ['background-color: #1a3a2a'] * len(row)
+            return [''] * len(row)
+
+        st.dataframe(
+            table_df.style.apply(highlight_top2, axis=1),
+            use_container_width=True,
+            hide_index=False
+        )
+        st.markdown("")
 
 # ══════════════════════════════════════════════════════════════
 # PAGE: TODAY'S MATCHES
@@ -550,48 +674,40 @@ elif page == "📅 Today's Matches":
     if todays:
         st.markdown(f"### 🔴 Today — {today.strftime('%B %d, %Y')}")
         for ta, tb, grp, d in todays:
-            pred = match_cache_knockout.get((ta, tb))
-            if pred:
-                hw = pred['home_win']*100
-                dr = pred['draw']*100
-                aw = pred['away_win']*100
-                st.markdown(f"**Group {grp}**")
-                c1,c2,c3,c4,c5 = st.columns([3,1,3,1,3])
-                with c1: st.metric(ta, f"{hw:.0f}%", "Win")
-                with c2: st.markdown("<br><br>**vs**", unsafe_allow_html=True)
-                with c3: st.metric(tb, f"{aw:.0f}%", "Win")
-                with c4: st.markdown("<br><br>**—**", unsafe_allow_html=True)
-                with c5: st.metric("Draw", f"{dr:.0f}%")
-                fig_t, ax_t = plt.subplots(figsize=(8, 0.6))
-                fig_t.patch.set_facecolor('#0e1117')
-                ax_t.set_facecolor('#0e1117')
-                ax_t.barh([0],[hw], color='#00d4a4')
-                ax_t.barh([0],[dr], left=[hw], color='#888888')
-                ax_t.barh([0],[aw], left=[hw+dr], color='#FF6B6B')
-                ax_t.set_xlim(0,100)
-                ax_t.set_yticks([])
-                ax_t.spines[:].set_visible(False)
-                plt.tight_layout(pad=0)
-                st.pyplot(fig_t)
-                st.markdown("---")
+            hw, dr, aw = get_live_pred(ta, tb)
+            hw *= 100; dr *= 100; aw *= 100
+            done = match_already_entered(ta, tb)
+            st.markdown(f"**Group {grp}** {'✅ Result entered' if done else '⏳ Upcoming'}")
+            c1,c2,c3,c4,c5 = st.columns([3,1,3,1,3])
+            with c1: st.metric(ta, f"{hw:.0f}%", "Win")
+            with c2: st.markdown("<br><br>**vs**", unsafe_allow_html=True)
+            with c3: st.metric(tb, f"{aw:.0f}%", "Win")
+            with c4: st.markdown("<br><br>**—**", unsafe_allow_html=True)
+            with c5: st.metric("Draw", f"{dr:.0f}%")
+            fig_t, ax_t = plt.subplots(figsize=(8, 0.6))
+            fig_t.patch.set_facecolor('#0e1117'); ax_t.set_facecolor('#0e1117')
+            ax_t.barh([0],[hw], color='#00d4a4')
+            ax_t.barh([0],[dr], left=[hw], color='#888888')
+            ax_t.barh([0],[aw], left=[hw+dr], color='#FF6B6B')
+            ax_t.set_xlim(0,100); ax_t.set_yticks([])
+            ax_t.spines[:].set_visible(False)
+            plt.tight_layout(pad=0); st.pyplot(fig_t)
+            st.markdown("---")
     else:
-        next_fixtures = [(ta,tb,grp,d) for ta,tb,grp,d in WC_FIXTURES
-                         if d >= today_str]
+        next_fixtures = [(ta,tb,grp,d) for ta,tb,grp,d in WC_FIXTURES if d >= today_str]
         if next_fixtures:
             next_date = next_fixtures[0][3]
-            next_day  = [(ta,tb,grp,d) for ta,tb,grp,d in WC_FIXTURES
-                         if d == next_date]
+            next_day  = [(ta,tb,grp,d) for ta,tb,grp,d in WC_FIXTURES if d == next_date]
             nd = datetime.strptime(next_date, "%Y-%m-%d").strftime("%B %d, %Y")
             st.info(f"🗓️ No matches today. Next fixtures: **{nd}**")
             st.markdown(f"### Upcoming — {nd}")
             for ta, tb, grp, d in next_day:
-                pred = match_cache_knockout.get((ta, tb))
-                if pred:
-                    c1,c2,c3,c4 = st.columns([3,1,3,2])
-                    with c1: st.markdown(f"**{ta}**  `{pred['home_win']*100:.0f}%`")
-                    with c2: st.markdown("**vs**")
-                    with c3: st.markdown(f"**{tb}**  `{pred['away_win']*100:.0f}%`")
-                    with c4: st.markdown(f"Group {grp} | Draw: {pred['draw']*100:.0f}%")
+                hw, dr, aw = get_live_pred(ta, tb)
+                c1,c2,c3,c4 = st.columns([3,1,3,2])
+                with c1: st.markdown(f"**{ta}**  `{hw*100:.0f}%`")
+                with c2: st.markdown("**vs**")
+                with c3: st.markdown(f"**{tb}**  `{aw*100:.0f}%`")
+                with c4: st.markdown(f"Group {grp} | Draw: {dr*100:.0f}%")
         else:
             st.success("🏆 Tournament complete!")
 
@@ -599,13 +715,12 @@ elif page == "📅 Today's Matches":
         st.markdown("---")
         st.markdown("### 📆 Tomorrow")
         for ta, tb, grp, d in tomorrows:
-            pred = match_cache_knockout.get((ta, tb))
-            if pred:
-                c1,c2,c3,c4 = st.columns([3,1,3,2])
-                with c1: st.markdown(f"**{ta}**  `{pred['home_win']*100:.0f}%`")
-                with c2: st.markdown("**vs**")
-                with c3: st.markdown(f"**{tb}**  `{pred['away_win']*100:.0f}%`")
-                with c4: st.markdown(f"Group {grp} | Draw: {pred['draw']*100:.0f}%")
+            hw, dr, aw = get_live_pred(ta, tb)
+            c1,c2,c3,c4 = st.columns([3,1,3,2])
+            with c1: st.markdown(f"**{ta}**  `{hw*100:.0f}%`")
+            with c2: st.markdown("**vs**")
+            with c3: st.markdown(f"**{tb}**  `{aw*100:.0f}%`")
+            with c4: st.markdown(f"Group {grp} | Draw: {dr*100:.0f}%")
 
 # ══════════════════════════════════════════════════════════════
 # PAGE: METHODOLOGY
@@ -613,7 +728,6 @@ elif page == "📅 Today's Matches":
 elif page == "📖 Methodology":
     st.subheader("📖 How WorldSim Works")
     st.markdown("---")
-
     st.markdown("### 🗄️ Data")
     st.markdown("""
 WorldSim is trained on **49,287 international football matches** from 1990 to 2026,
@@ -621,7 +735,6 @@ sourced from Kaggle's international football results dataset. We filter to compe
 matches only — World Cup, European Championship, Copa América, and qualifiers —
 giving us **10,782 high-signal matches** for model fitting.
     """)
-
     st.markdown("---")
     st.markdown("### ⚡ Elo Rating Engine")
     st.markdown("""
@@ -636,78 +749,46 @@ Where:
 - **expected** = 1 / (1 + 10^((opponent_elo − team_elo) / 400))
 - **actual** = 1 (win), 0.5 (draw), 0 (loss)
 
-After 32,101 matches the current top ratings are:
+After 32,101 matches the pre-tournament top ratings are:
 **Spain 2041 | Argentina 2035 | France 1995 | England 1919 | Brazil 1922**
-    """)
 
+During the tournament, Elo ratings update live after each result you enter.
+    """)
     st.markdown("---")
     st.markdown("### 📐 Dixon-Coles Goal Model")
     st.markdown("""
-The Dixon-Coles model treats goals as independent Poisson processes:
-
-```
-P(home scores H goals) = Poisson(H | μ_home)
-P(away scores A goals) = Poisson(A | μ_away)
-```
-
-Where expected goals are:
-```
-μ_home = exp(attack_home − defence_away + home_advantage)
-μ_away = exp(attack_away − defence_home)
-```
-
-A **low-score correction factor τ** adjusts probabilities for 0-0, 1-0, 0-1, and 1-1
-scorelines, which occur more/less frequently than pure Poisson predicts.
-
-Model fitted via **maximum likelihood** (L-BFGS-B + Powell two-stage optimisation)
-on 2,686 competitive matches since 2018.
+The Dixon-Coles model treats goals as independent Poisson processes.
+Model fitted via **maximum likelihood** (L-BFGS-B + Powell two-stage optimisation).
 
 Key fitted parameters:
-- **Home advantage**: 1.295× (playing at home increases expected goals by ~30%)
+- **Home advantage**: 1.295× (~30% goal boost)
 - **ρ (rho)**: −0.059 (low-score correction)
 - **Log-likelihood**: −7,043.22 (converged ✅)
     """)
-
     st.markdown("---")
-    st.markdown("### 🔀 Elo + Form Fusion")
+    st.markdown("### 🔄 Live Bayesian Updates")
     st.markdown("""
-Dixon-Coles captures historical goal patterns. To reflect **current team strength**,
-we fuse it with:
+When you enter a match result in **🔄 Update Results**:
 
-1. **Elo difference** → multiplicative goal adjustment via 10^(Δelo/400 × weight)
-2. **Rolling form index** → points average over last 10 matches (3=win, 1=draw, 0=loss)
+1. The winning team gains Elo points (proportional to upset magnitude)
+2. The losing team loses the same points
+3. All future match predictions use the updated Elo ratings
+4. This means a Spain loss would immediately reduce their predicted win probability
 
-This means a team like Argentina (Elo 2035, Form 2.35) correctly outperforms
-Brazil (Elo 1922, Form 1.60) despite Brazil's stronger Dixon-Coles historical params.
+The match predictor and today's fixtures both use live Elo — so probabilities
+reflect the current state of the tournament, not just pre-tournament predictions.
     """)
-
     st.markdown("---")
     st.markdown("### 🎲 Monte Carlo Simulation")
     st.markdown("""
 WorldSim runs **10,000 complete tournament simulations**:
 
 1. **Group stage** — full round-robin, 6 matches per group × 12 groups
-2. **Best third-place selection** — FIFA rules: top 8 of 12 third-placed teams by points → GD → GF
-3. **Round of 32 → Final** — knockout bracket with penalty shootout modelling for draws
+2. **Best third-place selection** — FIFA rules: top 8 of 12 third-placed teams
+3. **Round of 32 → Final** — knockout bracket with penalty shootout modelling
 
-Each simulation independently samples match outcomes from the probability distributions,
-producing a distribution of outcomes rather than a single prediction.
-
-**Speed**: Pre-computed match cache (2,256 matchups) enables 10,000 simulations in ~9 seconds.
+**Speed**: Pre-computed match cache enables 10,000 simulations in ~9 seconds.
     """)
-
-    st.markdown("---")
-    st.markdown("### 📊 Calibration")
-    st.markdown("""
-The model is designed to be **calibrated** — if we say a team has a 30% chance of winning,
-they should win roughly 30% of the time across many similar situations.
-
-Post-tournament (after July 2026), we will publish a full calibration analysis:
-- Predicted probability vs actual outcome frequency
-- Brier score and log-loss metrics
-- Comparison against bookmaker implied odds
-    """)
-
     st.markdown("---")
     st.markdown("### 👤 Built by")
     st.markdown("""
@@ -722,40 +803,21 @@ Post-tournament (after July 2026), we will publish a full calibration analysis:
 # PAGE: BRACKET
 # ══════════════════════════════════════════════════════════════
 elif page == "🏟️ Bracket":
-    st.subheader("🏟️ Round of 32 — Predicted Bracket")
-    st.markdown("Pre-tournament bracket based on model group stage predictions. "
-                "Win % shown for each match.")
-    st.markdown("---")
+    st.subheader("🏟️ Predicted Group Stage Outcomes")
+    st.markdown("Based on simulation results — uses live Elo where available.")
 
-    # Predicted group winners and runners-up based on simulation results
-    # Use top 2 from each group by group_qualify%
     predicted_bracket = {}
     for grp, teams in WC2026_GROUPS.items():
         grp_data = results_df[results_df['team'].isin(teams)]\
                    .sort_values('group_qualify%', ascending=False)
         if len(grp_data) >= 2:
             predicted_bracket[grp] = {
-                'winner':     grp_data.iloc[0]['team'],
-                'runner_up':  grp_data.iloc[1]['team'],
-                'w_qual':     grp_data.iloc[0]['group_qualify%'],
-                'r_qual':     grp_data.iloc[1]['group_qualify%'],
+                'winner':    grp_data.iloc[0]['team'],
+                'runner_up': grp_data.iloc[1]['team'],
+                'w_qual':    grp_data.iloc[0]['group_qualify%'],
+                'r_qual':    grp_data.iloc[1]['group_qualify%'],
             }
 
-    # Build R32 matchups (group winners vs runners-up / third place)
-    # Simplified: winners vs runners from opposite groups
-    r32_matchups = [
-        ('A winner', 'B runner'),  ('B winner', 'A runner'),
-        ('C winner', 'D runner'),  ('D winner', 'C runner'),
-        ('E winner', 'F runner'),  ('F winner', 'E runner'),
-        ('G winner', 'H runner'),  ('H winner', 'G runner'),
-        ('I winner', 'J runner'),  ('J winner', 'I runner'),
-        ('K winner', 'L runner'),  ('L winner', 'K runner'),
-        ('A winner', 'C runner'),  ('B winner', 'D runner'),
-        ('E winner', 'G runner'),  ('F winner', 'H runner'),
-    ]
-
-    # Display as a clean table
-    st.markdown("### Predicted Group Stage Outcomes")
     group_cols = st.columns(3)
     for i, (grp, data) in enumerate(predicted_bracket.items()):
         with group_cols[i % 3]:
@@ -765,61 +827,42 @@ elif page == "🏟️ Bracket":
             st.markdown("")
 
     st.markdown("---")
-    st.markdown("### Round of 32 — Predicted Fixtures")
-    st.markdown("Based on most likely group stage outcomes:")
-
-    # Show predicted R32 fixtures with win probabilities
+    st.markdown("### Predicted Round of 32 Fixtures")
     grp_keys = sorted(predicted_bracket.keys())
-    r32_fixtures = []
 
-    # Winners vs thirds (8 matches)
+    r32_fixtures = []
     for i, grp in enumerate(grp_keys[:8]):
         home = predicted_bracket[grp]['winner']
-        # pair with runner from next group
         away_grp = grp_keys[(i + 6) % 12]
         away = predicted_bracket[away_grp]['runner_up']
         r32_fixtures.append((home, away, f"Group {grp} W vs Group {away_grp} R"))
-
-    # Remaining winners vs runners (8 matches)
     for i, grp in enumerate(grp_keys[8:]):
         home = predicted_bracket[grp]['winner']
         away_grp = grp_keys[i]
         away = predicted_bracket[away_grp]['runner_up']
         r32_fixtures.append((home, away, f"Group {grp} W vs Group {away_grp} R"))
 
-    # Display in 2 columns
     col_left, col_right = st.columns(2)
     for i, (home, away, label) in enumerate(r32_fixtures[:16]):
-        pred = match_cache_knockout.get((home, away))
+        hw, dr, aw = get_live_pred(home, away)
+        hw *= 100; dr *= 100; aw *= 100
+        winner = home if hw > aw else away
         col = col_left if i % 2 == 0 else col_right
         with col:
-            if pred:
-                hw = pred['home_win']*100
-                aw = pred['away_win']*100
-                dr = pred['draw']*100
-                winner = home if hw > aw else away
-                st.markdown(f"**{label}**")
-
-                fig_b, ax_b = plt.subplots(figsize=(5, 0.5))
-                fig_b.patch.set_facecolor('#0e1117')
-                ax_b.set_facecolor('#0e1117')
-                ax_b.barh([0],[hw], color='#00d4a4')
-                ax_b.barh([0],[dr], left=[hw], color='#555')
-                ax_b.barh([0],[aw], left=[hw+dr], color='#FF6B6B')
-                ax_b.set_xlim(0,100); ax_b.set_yticks([])
-                ax_b.spines[:].set_visible(False)
-                plt.tight_layout(pad=0)
-                st.pyplot(fig_b)
-
-                st.markdown(
-                    f"<span style='color:#00d4a4'>**{home}** {hw:.0f}%</span> "
-                    f"| Draw {dr:.0f}% | "
-                    f"<span style='color:#FF6B6B'>**{away}** {aw:.0f}%</span> "
-                    f"→ 🏆 *{winner} favoured*",
-                    unsafe_allow_html=True
-                )
-                st.markdown("")
-
-    st.markdown("---")
-    st.info("💡 This bracket updates after group stage results are entered in "
-           "the '🔄 Update Results' page.")
+            st.markdown(f"**{label}**")
+            fig_b, ax_b = plt.subplots(figsize=(5, 0.4))
+            fig_b.patch.set_facecolor('#0e1117'); ax_b.set_facecolor('#0e1117')
+            ax_b.barh([0],[hw], color='#00d4a4')
+            ax_b.barh([0],[dr], left=[hw], color='#555')
+            ax_b.barh([0],[aw], left=[hw+dr], color='#FF6B6B')
+            ax_b.set_xlim(0,100); ax_b.set_yticks([])
+            ax_b.spines[:].set_visible(False)
+            plt.tight_layout(pad=0); st.pyplot(fig_b)
+            st.markdown(
+                f"<span style='color:#00d4a4'>**{home}** {hw:.0f}%</span> | "
+                f"Draw {dr:.0f}% | "
+                f"<span style='color:#FF6B6B'>**{away}** {aw:.0f}%</span> "
+                f"→ *{winner} favoured*",
+                unsafe_allow_html=True
+            )
+            st.markdown("")
